@@ -1,0 +1,69 @@
+from flask import Flask, render_template, request, jsonify
+import threading
+
+# Инициализация Flask-приложения
+app = Flask(__name__)
+
+# Глобальные переменные для хранения истории сообщений (для веб-чата)
+web_chat_history = {}
+
+# Маршрут для главной страницы
+@app.route("/")
+def home():
+    return render_template("index.html")  # HTML-шаблон для веб-интерфейса
+
+# Маршрут для обработки сообщений из веб-чата
+@app.route("/send_message", methods=["POST"])
+def send_message():
+    data = request.json
+    user_id = data.get("user_id")  # Идентификатор пользователя (можно использовать сессию или cookies)
+    message = data.get("message")
+
+    if not user_id:
+        return jsonify({"error": "User ID is required"}), 400
+
+    # Инициализация истории сообщений для пользователя
+    if user_id not in web_chat_history:
+        web_chat_history[user_id] = []
+
+    # Добавление сообщения пользователя в историю
+    web_chat_history[user_id].append({"role": "user", "content": message})
+
+    # Поиск релевантных отрывков
+    relevant_texts = search_relevant_texts(message, index, text_chunks, embedding_model)
+    context = " ".join(relevant_texts)
+
+    # Генерация ответа через GigaChat
+    bot_response = generate_groq_response(message, context, user_text_messages, user_id)
+
+    # Добавление ответа бота в историю
+    web_chat_history[user_id].append({"role": "bot", "content": bot_response})
+
+    return jsonify({"response": bot_response})
+
+# Маршрут для записи на прием
+@app.route("/book_appointment", methods=["POST"])
+def book_appointment():
+    data = request.json
+    user_id = data.get("user_id")
+    name = data.get("name")
+    phone = data.get("phone")
+    date = data.get("date")
+
+    # Здесь можно добавить логику для сохранения записи в базу данных или отправки уведомления
+    print(f"Запись на прием: {name}, {phone}, {date}")
+
+    return jsonify({"status": "success", "message": "Запись успешно оформлена!"})
+
+# Запуск Flask-приложения в отдельном потоке
+def run_flask_app():
+    app.run(host="0.0.0.0", port=5000, debug=False)
+
+# Запуск Flask в отдельном потоке
+flask_thread = threading.Thread(target=run_flask_app)
+flask_thread.start()
+
+# Запуск Telegram-бота
+if __name__ == "__main__":
+    logging.info("Бот запущен.")
+    bot.infinity_polling()
