@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Онлайн-чат с ботом</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .chat-container {
+            width: 400px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            font-size: 18px;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            border-bottom: 1px solid #ddd;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 5px;
+            max-width: 70%;
+        }
+        .user-message {
+            background-color: #007bff;
+            color: #fff;
+            align-self: flex-end;
+        }
+        .bot-message {
+            background-color: #f1f1f1;
+            color: #333;
+            align-self: flex-start;
+        }
+        .chat-input {
+            display: flex;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        .chat-input button {
+            padding: 8px 12px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .book-appointment {
+            text-align: center;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .book-appointment button {
+            padding: 8px 12px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">Онлайн-чат с ботом</div>
+        <div class="chat-messages" id="chat-messages">
+            <!-- Сообщения будут добавляться сюда -->
+        </div>
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Введите ваше сообщение...">
+            <button onclick="sendMessage()">Отправить</button>
+        </div>
+        <div class="book-appointment">
+            <button onclick="bookAppointment()">Записаться на прием</button>
+        </div>
+    </div>
+
+    <script>
+        let user_id = Math.random().toString(36).substring(7);  // Генерация уникального ID пользователя
+
+        function sendMessage() {
+            const input = document.getElementById("user-input");
+            const message = input.value.trim();
+            if (message === "") return;
+
+            // Добавление сообщения пользователя в чат
+            addMessage("user", message);
+            input.value = "";
+
+            // Отправка сообщения на сервер
+            fetch("/send_message", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ user_id: user_id, message: message }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.response) {
+                    addMessage("bot", data.response);
+                }
+            });
+        }
+
+        function bookAppointment() {
+            const name = prompt("Введите ваше имя:");
+            const phone = prompt("Введите ваш номер телефона:");
+            const date = prompt("Введите желаемую дату (например, 2023-10-15):");
+
+            if (name && phone && date) {
+                fetch("/book_appointment", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ user_id: user_id, name: name, phone: phone, date: date }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                });
+            }
+        }
+
+        function addMessage(role, content) {
+            const chatMessages = document.getElementById("chat-messages");
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message", `${role}-message`);
+            messageDiv.textContent = content;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    </script>
+</body>
+</html>
